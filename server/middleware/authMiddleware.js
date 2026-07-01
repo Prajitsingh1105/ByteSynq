@@ -11,6 +11,10 @@ const protect = async (req, res, next) => {
         try {
             token = req.headers.authorization.split(' ')[1];
 
+            if (!token || token === 'null' || token === 'undefined') {
+                return res.status(401).json({ success: false, error: 'Not authorized, token missing or malformed' });
+            }
+
             // Verify token
             const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_dev_only';
             const decoded = jwt.verify(token, JWT_SECRET);
