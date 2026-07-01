@@ -14,7 +14,7 @@ program
   .description('Listen for webhooks and forward them locally')
   .requiredOption('-e, --endpoint <id>', 'Endpoint ID to listen to')
   .requiredOption('-p, --port <port>', 'Local port to forward to (e.g., 3000)')
-  .option('-s, --server <url>', 'ByteSynq server URL', 'http://localhost:3001')
+  .option('-s, --server <url>', 'ByteSynq server URL', 'https://bytesynq.onrender.com')
   .action((options) => {
     const { endpoint, port, server } = options;
     const targetUrl = `http://localhost:${port}`;
