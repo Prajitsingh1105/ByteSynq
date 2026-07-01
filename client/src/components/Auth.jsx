@@ -30,7 +30,7 @@ export default function Auth({ onLoginSuccess }) {
         headers: { Authorization: `Bearer ${token}` }
       }).then(res => {
         window.history.replaceState({}, document.title, window.location.pathname);
-        onLoginSuccess(res.data.user);
+        onLoginSuccess({ ...res.data.user, token });
         toast.success("Successfully authenticated!");
       }).catch(() => {
         window.history.replaceState({}, document.title, window.location.pathname);
