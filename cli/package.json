@@ -1,7 +1,8 @@
 {
   "name": "bytesynq-cli",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Localhost forwarding CLI for ByteSynq",
+  "license": "MIT",
   "main": "index.js",
   "bin": {
     "bytesynq": "./index.js"
