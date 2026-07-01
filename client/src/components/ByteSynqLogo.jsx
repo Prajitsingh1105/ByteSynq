@@ -1,0 +1,21 @@
+export default function ByteSynqLogo({ className = "w-6 h-6" }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" className={className}>
+      <defs>
+        <linearGradient id="byte-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#10b981" />
+          <stop offset="100%" stopColor="#06b6d4" />
+        </linearGradient>
+      </defs>
+      {/* Outer Hexagon */}
+      <polygon points="50,5 90,25 90,75 50,95 10,75 10,25" fill="none" stroke="url(#byte-grad)" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+      
+      {/* Inner Sync Arrows */}
+      <path d="M35 45 A15 15 0 0 1 65 45" stroke="url(#byte-grad)" strokeWidth="6" strokeLinecap="round" fill="none" />
+      <polygon points="65,37 73,45 57,45" fill="#06b6d4" />
+      
+      <path d="M65 55 A15 15 0 0 1 35 55" stroke="url(#byte-grad)" strokeWidth="6" strokeLinecap="round" fill="none" />
+      <polygon points="35,63 27,55 43,55" fill="#10b981" />
+    </svg>
+  );
+}
