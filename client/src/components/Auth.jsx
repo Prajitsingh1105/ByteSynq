@@ -426,7 +426,7 @@ export default function Auth({ onLoginSuccess }) {
           </div>
           
           <a 
-            href=`${API_URL}/api/v1/auth/github`
+            href={`${API_URL}/api/v1/auth/github`}
             className="mt-6 w-full py-3 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-3 border border-slate-700"
           >
             <GitBranch className="w-5 h-5" />
