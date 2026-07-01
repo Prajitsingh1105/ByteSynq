@@ -1,10 +1,10 @@
 {
-  "name": "hookcatch-cli",
+  "name": "bytesynq-cli",
   "version": "1.0.0",
-  "description": "Localhost forwarding CLI for HookCatch",
+  "description": "Localhost forwarding CLI for ByteSynq",
   "main": "index.js",
   "bin": {
-    "hookcatch": "./index.js"
+    "bytesynq": "./index.js"
   },
   "scripts": {
     "start": "node index.js"
