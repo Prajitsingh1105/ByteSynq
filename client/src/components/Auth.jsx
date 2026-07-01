@@ -1,3 +1,4 @@
+import { API_URL } from '../config.js';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -25,7 +26,7 @@ export default function Auth({ onLoginSuccess }) {
     
     if (token) {
       localStorage.setItem('token', token);
-      axios.get('http://localhost:3001/api/v1/auth/me', {
+      axios.get(`${API_URL}/api/v1/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       }).then(res => {
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -425,7 +426,7 @@ export default function Auth({ onLoginSuccess }) {
           </div>
           
           <a 
-            href="http://localhost:3001/api/v1/auth/github"
+            href=`${API_URL}/api/v1/auth/github`
             className="mt-6 w-full py-3 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-3 border border-slate-700"
           >
             <GitBranch className="w-5 h-5" />

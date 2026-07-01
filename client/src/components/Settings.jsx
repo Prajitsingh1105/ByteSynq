@@ -1,3 +1,4 @@
+import { API_URL } from '../config.js';
 import { useState, useEffect } from 'react';
 import { Key, Clock, Eye, EyeOff, Save, Shield, FileJson, Reply, Bell } from 'lucide-react';
 import axios from 'axios';

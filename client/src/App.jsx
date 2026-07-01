@@ -1,3 +1,4 @@
+import { API_URL } from 'config.js';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
@@ -35,7 +36,7 @@ export default function App() {
     const token = localStorage.getItem('token');
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      axios.get('http://localhost:3001/api/v1/auth/me')
+      axios.get(`${API_URL}/api/v1/auth/me`)
         .then(res => {
           if (res.data.success) setUser(res.data.user);
         })
@@ -53,7 +54,7 @@ export default function App() {
     if (!user) return;
     async function fetchEndpoints() {
       try {
-        const res = await axios.get('http://localhost:3001/api/v1/endpoints');
+        const res = await axios.get(`${API_URL}/api/v1/endpoints`);
         if (res.data.success && res.data.endpoints.length > 0) {
           setEndpoints(res.data.endpoints);
           setActiveEndpointId(res.data.endpoints[0].endpointId);
@@ -83,7 +84,7 @@ export default function App() {
 
   const handleCreateEndpoint = async () => {
     try {
-      const res = await axios.post('http://localhost:3001/api/v1/endpoints');
+      const res = await axios.post(`${API_URL}/api/v1/endpoints`);
       if (res.data.success) {
         setEndpoints([res.data.endpoint, ...endpoints]);
         setActiveEndpointId(res.data.endpoint.endpointId);

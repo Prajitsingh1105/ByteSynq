@@ -1,3 +1,4 @@
+import { API_URL } from '../config.js';
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Database, Zap, Clock, Terminal, ChevronRight, Webhook, Search, Filter, ShieldAlert, Copy, Check } from 'lucide-react';
@@ -244,7 +245,7 @@ export default function DataStream({ endpointId }) {
     if (!endpointId) return;
 
     // Connect strictly to the backend port
-    const socket = io('http://localhost:3001'); 
+    const socket = io(`${API_URL}`); 
 
     socket.on('connect', () => {
       console.log('🟢 React successfully connected to ByteSynq Backend!');
