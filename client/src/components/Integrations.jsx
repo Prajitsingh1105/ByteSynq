@@ -18,7 +18,7 @@ export default function Integrations({ endpoint, onUpdateEndpoint }) {
   const handleSaveForwardUrl = async () => {
     if (!endpoint) return;
     try {
-      const res = await axios.patch(`http://localhost:3001/api/v1/endpoints/${endpoint.endpointId}/settings`, {
+      const res = await axios.patch(`${API_URL}/api/v1/endpoints/${endpoint.endpointId}/settings`, {
         retentionDays: endpoint.retentionDays,
         forwardUrl: forwardUrl
       });
@@ -43,7 +43,7 @@ export default function Integrations({ endpoint, onUpdateEndpoint }) {
         existingIntegrations.push({ provider: activeConfigId, secret: integrationSecret, isActive: true });
       }
 
-      const res = await axios.patch(`http://localhost:3001/api/v1/endpoints/${endpoint.endpointId}/settings`, {
+      const res = await axios.patch(`${API_URL}/api/v1/endpoints/${endpoint.endpointId}/settings`, {
         integrations: existingIntegrations
       });
       if (res.data.success) {
@@ -66,7 +66,7 @@ export default function Integrations({ endpoint, onUpdateEndpoint }) {
       if (existingIdx >= 0) {
         existingIntegrations[existingIdx].isActive = false;
         
-        const res = await axios.patch(`http://localhost:3001/api/v1/endpoints/${endpoint.endpointId}/settings`, {
+        const res = await axios.patch(`${API_URL}/api/v1/endpoints/${endpoint.endpointId}/settings`, {
           integrations: existingIntegrations
         });
         if (res.data.success) {

@@ -21,7 +21,7 @@ export default function Dashboard({ endpoint }) {
     async function fetchAnalytics() {
       if (!endpoint) return;
       try {
-        const res = await axios.get(`http://localhost:3001/api/v1/endpoints/${endpoint.endpointId}/analytics`);
+        const res = await axios.get(`${API_URL}/api/v1/endpoints/${endpoint.endpointId}/analytics`);
         if (res.data.success) {
           const formattedVolumeData = (res.data.volumeData || []).map(d => ({
             ...d,

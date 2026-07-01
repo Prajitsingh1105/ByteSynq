@@ -165,7 +165,7 @@ export default function DataStream({ endpointId }) {
 
   useEffect(() => {
     if (activeTab === 'METRICS' && endpointId) {
-      axios.get(`http://localhost:3001/api/v1/endpoints/${endpointId}/analytics`, {
+      axios.get(`${API_URL}/api/v1/endpoints/${endpointId}/analytics`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       })
       .then(res => {
@@ -189,7 +189,7 @@ export default function DataStream({ endpointId }) {
     
     setReplayStatus('loading');
     try {
-      const res = await axios.post(`http://localhost:3001/api/v1/endpoints/${endpointId}/webhooks/${activeWebhook.id}/replay`);
+      const res = await axios.post(`${API_URL}/api/v1/endpoints/${endpointId}/webhooks/${activeWebhook.id}/replay`);
       if (res.data.success) {
         setReplayStatus('success');
         toast.success("Webhook replayed successfully");
@@ -225,7 +225,7 @@ export default function DataStream({ endpointId }) {
         if (methodFilter !== 'ALL') params.append('method', methodFilter);
         if (statusFilter !== 'ALL') params.append('status', statusFilter);
 
-        const res = await axios.get(`http://localhost:3001/api/v1/endpoints/${endpointId}/webhooks?${params.toString()}`);
+        const res = await axios.get(`${API_URL}/api/v1/endpoints/${endpointId}/webhooks?${params.toString()}`);
         if (res.data.success) {
           setWebhooks(res.data.webhooks);
           if (res.data.webhooks.length > 0) {
@@ -551,7 +551,7 @@ export default function DataStream({ endpointId }) {
              <p className="text-sm text-slate-500 max-w-md">
                Send a request to <br/>
                <code className="text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded mt-2 inline-block break-all">
-                 http://localhost:3001/api/v1/catch/{endpointId || 'your-endpoint-id'}
+                 ${API_URL}/api/v1/catch/{endpointId || 'your-endpoint-id'}
                </code>
              </p>
           </div>

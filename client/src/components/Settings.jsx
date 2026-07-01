@@ -40,7 +40,7 @@ export default function Settings({ endpoint, onUpdateEndpoint }) {
   const handleRotateKey = async () => {
     if (!endpoint) return;
     try {
-      const res = await axios.post(`http://localhost:3001/api/v1/endpoints/${endpoint.endpointId}/rotate-secret`);
+      const res = await axios.post(`${API_URL}/api/v1/endpoints/${endpoint.endpointId}/rotate-secret`);
       if (res.data.success) {
         onUpdateEndpoint(res.data.endpoint);
         toast.success("API Key rotated successfully!");
@@ -54,7 +54,7 @@ export default function Settings({ endpoint, onUpdateEndpoint }) {
   const handleSaveSettings = async () => {
     if (!endpoint) return;
     try {
-      const res = await axios.patch(`http://localhost:3001/api/v1/endpoints/${endpoint.endpointId}/settings`, {
+      const res = await axios.patch(`${API_URL}/api/v1/endpoints/${endpoint.endpointId}/settings`, {
         retentionDays: Number(retention),
         forwardUrl: endpoint.forwardUrl,
         validationSchema: validationSchema,

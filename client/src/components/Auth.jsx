@@ -52,7 +52,7 @@ export default function Auth({ onLoginSuccess }) {
     
     try {
       const endpoint = isLogin ? '/api/v1/auth/login' : '/api/v1/auth/register';
-      const res = await axios.post(`http://localhost:3001${endpoint}`, { email, password });
+      const res = await axios.post(`${API_URL}${endpoint}`, { email, password });
       
       if (res.data.success) {
         onLoginSuccess(res.data.user);
