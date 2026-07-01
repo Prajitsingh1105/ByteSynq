@@ -14,13 +14,17 @@ router.get('/me', protect, getMe);
 router.get('/github', passport.authenticate('github', { scope: ['user:email'] }));
 
 router.get('/github/callback', 
-  passport.authenticate('github', { failureRedirect: 'http://localhost:5173/auth?error=oauth_failed' }),
+  (req, res, next) => {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    passport.authenticate('github', { failureRedirect: `${frontendUrl}/auth?error=oauth_failed` })(req, res, next);
+  },
   (req, res) => {
     const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_dev_only';
     const token = jwt.sign({ id: req.user._id }, JWT_SECRET, {
         expiresIn: '30d'
     });
-    res.redirect(`http://localhost:5173/auth?token=${token}`);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.redirect(`${frontendUrl}/auth?token=${token}`);
   }
 );
 
