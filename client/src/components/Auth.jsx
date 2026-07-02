@@ -20,6 +20,7 @@ export default function Auth({ onLoginSuccess }) {
   const [error, setError] = useState(null);
   const [currentView, setCurrentView] = useState('landing'); // 'landing', 'docs', 'features'
   const [otpStep, setOtpStep] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [otp, setOtp] = useState('');
 
   const getPasswordStrength = (pass) => {
@@ -41,6 +42,7 @@ export default function Auth({ onLoginSuccess }) {
   useEffect(() => {
     setOtpStep(false);
     setOtp('');
+    setIsForgotPassword(false);
   }, [isLogin]);
 
   useEffect(() => {
@@ -75,7 +77,28 @@ export default function Auth({ onLoginSuccess }) {
     setError(null);
     
     try {
-      if (!isLogin && !otpStep) {
+      if (isForgotPassword && !otpStep) {
+        // Step 1 of Password Reset: Request OTP
+        const res = await axios.post(`${API_URL}/api/v1/auth/send-otp`, { email, isReset: true });
+        if (res.data.success) {
+          setOtpStep(true);
+          toast.success("Verification code sent to your email");
+        }
+      } else if (isForgotPassword && otpStep) {
+        // Step 2 of Password Reset
+        if (strength.score < 5) {
+          const msg = 'Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.';
+          setError(msg);
+          toast.error(msg);
+          setLoading(false);
+          return;
+        }
+        const res = await axios.post(`${API_URL}/api/v1/auth/reset-password`, { email, password, otp });
+        if (res.data.success) {
+          onLoginSuccess(res.data.user);
+          toast.success("Password reset successfully! You are now logged in.");
+        }
+      } else if (!isLogin && !otpStep) {
         if (strength.score < 5) {
           const msg = 'Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.';
           setError(msg);
@@ -410,10 +433,10 @@ export default function Auth({ onLoginSuccess }) {
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-cyan-500" />
           
           <h2 className="text-2xl font-bold text-white mb-2">
-            {isLogin ? 'Welcome back' : 'Create an account'}
+            {isForgotPassword ? 'Reset password' : isLogin ? 'Welcome back' : 'Create an account'}
           </h2>
           <p className="text-slate-400 text-sm mb-8">
-            {isLogin ? 'Enter your credentials to access your workspace.' : 'Start capturing webhooks in seconds.'}
+            {isForgotPassword ? 'Enter your email to receive a secure reset code.' : isLogin ? 'Enter your credentials to access your workspace.' : 'Start capturing webhooks in seconds.'}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -434,60 +457,112 @@ export default function Auth({ onLoginSuccess }) {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      placeholder="••••••••"
-                      className="w-full bg-[#020617] border border-white/10 rounded-xl pl-10 pr-10 py-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all placeholder:text-slate-600"
-                    />
-                    <button 
-                      type="button" 
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  
-                  {/* Password Strength Indicator */}
-                  {!isLogin && password && (
-                    <div className="mt-2">
-                      <div className="flex gap-1 h-1.5 w-full mb-1">
-                        <div className={`flex-1 rounded-full ${strength.score >= 1 ? strength.color : 'bg-slate-700/50'}`}></div>
-                        <div className={`flex-1 rounded-full ${strength.score >= 3 ? strength.color : 'bg-slate-700/50'}`}></div>
-                        <div className={`flex-1 rounded-full ${strength.score >= 5 ? strength.color : 'bg-slate-700/50'}`}></div>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px] text-slate-500 font-medium">
-                        <span>Strength: <span className={strength.text === 'Weak' ? 'text-red-400' : strength.text === 'Good' ? 'text-amber-400' : 'text-emerald-400'}>{strength.text}</span></span>
-                        <span className={password.length >= 8 ? 'text-emerald-400' : 'text-slate-500'}>{password.length}/8+ chars</span>
-                      </div>
+                {!isForgotPassword && (
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Password</label>
+                      {isLogin && (
+                        <button 
+                          type="button" 
+                          onClick={() => { setIsForgotPassword(true); setError(null); }}
+                          className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                        >
+                          Forgot password?
+                        </button>
+                      )}
                     </div>
-                  )}
-                </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        placeholder="••••••••"
+                        className="w-full bg-[#020617] border border-white/10 rounded-xl pl-10 pr-10 py-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all placeholder:text-slate-600"
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    
+                    {/* Password Strength Indicator */}
+                    {!isLogin && password && (
+                      <div className="mt-2">
+                        <div className="flex gap-1 h-1.5 w-full mb-1">
+                          <div className={`flex-1 rounded-full ${strength.score >= 1 ? strength.color : 'bg-slate-700/50'}`}></div>
+                          <div className={`flex-1 rounded-full ${strength.score >= 3 ? strength.color : 'bg-slate-700/50'}`}></div>
+                          <div className={`flex-1 rounded-full ${strength.score >= 5 ? strength.color : 'bg-slate-700/50'}`}></div>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] text-slate-500 font-medium">
+                          <span>Strength: <span className={strength.text === 'Weak' ? 'text-red-400' : strength.text === 'Good' ? 'text-amber-400' : 'text-emerald-400'}>{strength.text}</span></span>
+                          <span className={password.length >= 8 ? 'text-emerald-400' : 'text-slate-500'}>{password.length}/8+ chars</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </>
             ) : (
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Verification Code</label>
-                <div className="relative">
-                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input
-                    type="text"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    required
-                    maxLength={6}
-                    placeholder="Enter 6-digit code"
-                    className="w-full bg-[#020617] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm font-mono text-center tracking-widest text-emerald-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all placeholder:text-slate-600"
-                  />
+              <>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Verification Code</label>
+                  <div className="relative">
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input
+                      type="text"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value)}
+                      required
+                      maxLength={6}
+                      placeholder="Enter 6-digit code"
+                      className="w-full bg-[#020617] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm font-mono text-center tracking-widest text-emerald-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all placeholder:text-slate-600"
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2 text-center">We sent a verification code to {email}</p>
                 </div>
-                <p className="text-xs text-slate-500 mt-2 text-center">We sent a verification code to {email}</p>
-              </div>
+                {isForgotPassword && (
+                  <div className="mt-4">
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">New Password</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        placeholder="Enter a strong new password"
+                        className="w-full bg-[#020617] border border-white/10 rounded-xl pl-10 pr-10 py-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all placeholder:text-slate-600"
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {/* Password Strength Indicator */}
+                    {password && (
+                      <div className="mt-2">
+                        <div className="flex gap-1 h-1.5 w-full mb-1">
+                          <div className={`flex-1 rounded-full ${strength.score >= 1 ? strength.color : 'bg-slate-700/50'}`}></div>
+                          <div className={`flex-1 rounded-full ${strength.score >= 3 ? strength.color : 'bg-slate-700/50'}`}></div>
+                          <div className={`flex-1 rounded-full ${strength.score >= 5 ? strength.color : 'bg-slate-700/50'}`}></div>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] text-slate-500 font-medium">
+                          <span>Strength: <span className={strength.text === 'Weak' ? 'text-red-400' : strength.text === 'Good' ? 'text-amber-400' : 'text-emerald-400'}>{strength.text}</span></span>
+                          <span className={password.length >= 8 ? 'text-emerald-400' : 'text-slate-500'}>{password.length}/8+ chars</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
             )}
 
             <button
@@ -497,14 +572,14 @@ export default function Auth({ onLoginSuccess }) {
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                 <>
-                  {!isLogin && !otpStep ? 'Continue' : isLogin ? 'Sign In' : 'Create Account'}
+                  {!isLogin && !otpStep && !isForgotPassword ? 'Continue' : isLogin && !isForgotPassword ? 'Sign In' : isForgotPassword && !otpStep ? 'Send Reset Code' : isForgotPassword && otpStep ? 'Reset Password' : 'Create Account'}
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
 
-          {!otpStep && (
+          {!otpStep && !isForgotPassword && (
             <>
               <div className="mt-8 flex items-center justify-center">
                 <div className="border-t border-slate-700 flex-grow"></div>
@@ -525,15 +600,24 @@ export default function Auth({ onLoginSuccess }) {
           <div className="mt-8 text-center text-sm text-slate-400">
             {otpStep ? (
               <button 
+                type="button"
                 onClick={() => setOtpStep(false)}
                 className="text-emerald-400 font-medium hover:text-emerald-300 transition-all"
               >
-                Back to Signup
+                Back to {isForgotPassword ? 'Email Input' : 'Signup'}
+              </button>
+            ) : isForgotPassword ? (
+              <button 
+                type="button"
+                onClick={() => { setIsForgotPassword(false); setIsLogin(true); setError(null); }}
+                className="text-emerald-400 font-medium hover:text-emerald-300 transition-all"
+              >
+                Back to Login
               </button>
             ) : isLogin ? (
-              <>Don't have an account? <button onClick={() => { setIsLogin(false); setError(null); }} className="text-emerald-400 font-medium hover:text-emerald-300 hover:underline transition-all">Sign up</button></>
+              <>Don't have an account? <button type="button" onClick={() => { setIsLogin(false); setError(null); }} className="text-emerald-400 font-medium hover:text-emerald-300 hover:underline transition-all">Sign up</button></>
             ) : (
-              <>Already have an account? <button onClick={() => { setIsLogin(true); setError(null); }} className="text-emerald-400 font-medium hover:text-emerald-300 hover:underline transition-all">Log in</button></>
+              <>Already have an account? <button type="button" onClick={() => { setIsLogin(true); setError(null); }} className="text-emerald-400 font-medium hover:text-emerald-300 hover:underline transition-all">Log in</button></>
             )}
           </div>
         </div>

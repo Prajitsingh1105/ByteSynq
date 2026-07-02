@@ -45,18 +45,21 @@ async function initTransporter() {
     }
 }
 
-async function sendAlertEmail(to, subject, text) {
+async function sendAlertEmail(to, subject, text, html = null) {
     const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER || 'alerts@bytesynq.io';
 
     // 1. Resend HTTP API (Bypasses Render SMTP Block)
     if (process.env.RESEND_API_KEY) {
         try {
-            await axios.post('https://api.resend.com/emails', {
+            const payload = {
                 from: fromAddress,
                 to: [to],
                 subject: subject,
                 text: text
-            }, {
+            };
+            if (html) payload.html = html;
+
+            await axios.post('https://api.resend.com/emails', payload, {
                 headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}` }
             });
             console.log(`[Resend HTTP] Email sent to ${to}. Subject: ${subject}`);
@@ -70,13 +73,15 @@ async function sendAlertEmail(to, subject, text) {
     // 2. SendGrid HTTP API (Bypasses Render SMTP Block)
     if (process.env.SENDGRID_API_KEY) {
         try {
-            // Ensure fromAddress is just an email string if it has format '"Name" <email>'
             const cleanFrom = fromAddress.replace(/.*<(.+)>/, '$1').trim();
+            const content = [{ type: 'text/plain', value: text }];
+            if (html) content.push({ type: 'text/html', value: html });
+
             await axios.post('https://api.sendgrid.com/v3/mail/send', {
                 personalizations: [{ to: [{ email: to }] }],
-                from: { email: cleanFrom },
+                from: { email: cleanFrom, name: 'ByteSynq Alerts' },
                 subject: subject,
-                content: [{ type: 'text/plain', value: text }]
+                content: content
             }, {
                 headers: { 'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}` }
             });
@@ -92,12 +97,15 @@ async function sendAlertEmail(to, subject, text) {
     if (process.env.BREVO_API_KEY) {
         try {
             const cleanFrom = fromAddress.replace(/.*<(.+)>/, '$1').trim();
-            await axios.post('https://api.brevo.com/v3/smtp/email', {
+            const payload = {
                 sender: { email: cleanFrom, name: 'ByteSynq Alerts' },
                 to: [{ email: to }],
                 subject: subject,
                 textContent: text
-            }, {
+            };
+            if (html) payload.htmlContent = html;
+
+            await axios.post('https://api.brevo.com/v3/smtp/email', payload, {
                 headers: { 
                     'api-key': process.env.BREVO_API_KEY,
                     'Content-Type': 'application/json'
@@ -115,12 +123,15 @@ async function sendAlertEmail(to, subject, text) {
     if (!transporter) await initTransporter();
     
     try {
-        const info = await transporter.sendMail({
+        const mailOptions = {
             from: fromAddress,
             to: to,
             subject: subject,
             text: text,
-        });
+        };
+        if (html) mailOptions.html = html;
+
+        const info = await transporter.sendMail(mailOptions);
         console.log(`[SMTP Alert] Email sent to ${to}. Subject: ${subject}`);
         if (info.messageId && info.messageId.includes('ethereal')) {
             console.log(`Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
