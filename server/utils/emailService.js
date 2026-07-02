@@ -42,8 +42,9 @@ async function sendAlertEmail(to, subject, text) {
     if (!transporter) await initTransporter();
     
     try {
+        const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER || '"ByteSynq Alerts" <alerts@bytesynq.io>';
         const info = await transporter.sendMail({
-            from: '"ByteSynq Alerts" <alerts@bytesynq.io>',
+            from: fromAddress,
             to: to,
             subject: subject,
             text: text,
