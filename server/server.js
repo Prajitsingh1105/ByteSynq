@@ -86,6 +86,8 @@ redisSubscriber.on('pmessage', (pattern, channel, message) => {
 
 
 
+app.get('/api/v1/health', (req, res) => res.status(200).json({ status: 'operational' }));
+
 app.use("/api/v1/auth", authRoutes);
 app.use("/",endpointRoutes);
 
