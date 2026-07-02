@@ -51,7 +51,7 @@ const sendOtp = async (req, res) => {
         await Otp.create({ email, otp });
 
         const htmlContent = getOtpEmailTemplate(otp, isReset);
-        const textContent = \`Your ByteSynq verification code is: \${otp}. It will expire in 10 minutes.\`;
+        const textContent = `Your ByteSynq verification code is: ${otp}. It will expire in 10 minutes.`;
 
         const emailSent = await sendAlertEmail(
             email, 
