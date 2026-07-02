@@ -22,6 +22,22 @@ export default function Auth({ onLoginSuccess }) {
   const [otpStep, setOtpStep] = useState(false);
   const [otp, setOtp] = useState('');
 
+  const getPasswordStrength = (pass) => {
+    let score = 0;
+    if (!pass) return { score: 0, text: '', color: 'bg-slate-700' };
+    if (pass.length >= 8) score += 1;
+    if (/[A-Z]/.test(pass)) score += 1;
+    if (/[a-z]/.test(pass)) score += 1;
+    if (/[0-9]/.test(pass)) score += 1;
+    if (/[^A-Za-z0-9]/.test(pass)) score += 1;
+    
+    if (score <= 2) return { score, text: 'Weak', color: 'bg-red-500' };
+    if (score <= 4) return { score, text: 'Good', color: 'bg-amber-500' };
+    return { score, text: 'Strong', color: 'bg-emerald-500' };
+  };
+
+  const strength = getPasswordStrength(password);
+
   useEffect(() => {
     setOtpStep(false);
     setOtp('');
@@ -60,6 +76,13 @@ export default function Auth({ onLoginSuccess }) {
     
     try {
       if (!isLogin && !otpStep) {
+        if (strength.score < 5) {
+          const msg = 'Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.';
+          setError(msg);
+          toast.error(msg);
+          setLoading(false);
+          return;
+        }
         // Step 1 of Signup: Request OTP
         const res = await axios.post(`${API_URL}/api/v1/auth/send-otp`, { email });
         if (res.data.success) {
@@ -431,6 +454,21 @@ export default function Auth({ onLoginSuccess }) {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  
+                  {/* Password Strength Indicator */}
+                  {!isLogin && password && (
+                    <div className="mt-2">
+                      <div className="flex gap-1 h-1.5 w-full mb-1">
+                        <div className={`flex-1 rounded-full ${strength.score >= 1 ? strength.color : 'bg-slate-700/50'}`}></div>
+                        <div className={`flex-1 rounded-full ${strength.score >= 3 ? strength.color : 'bg-slate-700/50'}`}></div>
+                        <div className={`flex-1 rounded-full ${strength.score >= 5 ? strength.color : 'bg-slate-700/50'}`}></div>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] text-slate-500 font-medium">
+                        <span>Strength: <span className={strength.text === 'Weak' ? 'text-red-400' : strength.text === 'Good' ? 'text-amber-400' : 'text-emerald-400'}>{strength.text}</span></span>
+                        <span className={password.length >= 8 ? 'text-emerald-400' : 'text-slate-500'}>{password.length}/8+ chars</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (

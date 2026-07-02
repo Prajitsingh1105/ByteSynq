@@ -50,6 +50,12 @@ const registerUser = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Please include all fields including OTP' });
         }
 
+        // Strict password complexity check
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+        if (!passwordRegex.test(password)) {
+            return res.status(400).json({ success: false, error: 'Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.' });
+        }
+
         // Check if user exists
         const userExists = await User.findOne({ email });
         if (userExists) {
