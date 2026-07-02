@@ -155,6 +155,7 @@ export default function DataStream({ endpointId }) {
   const [replayStatus, setReplayStatus] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [showMobileDetails, setShowMobileDetails] = useState(false);
 
   const handleCopy = () => {
     if (!activeWebhook) return;
@@ -481,7 +482,7 @@ export default function DataStream({ endpointId }) {
     <div className="h-full flex flex-col md:flex-row overflow-hidden bg-[#020617]">
       
       {/* Left Column: Stream List */}
-      <div className="w-full md:w-[400px] lg:w-[450px] border-r border-white/5 bg-[#0f172a]/20 flex flex-col h-full z-10">
+      <div className={`w-full md:w-[400px] lg:w-[450px] border-r border-white/5 bg-[#0f172a]/20 flex-col h-full z-10 ${showMobileDetails ? 'hidden md:flex' : 'flex'}`}>
         <div className="p-4 border-b border-white/5 bg-[#0f172a]/40 backdrop-blur-sm flex flex-col gap-3">
           <h2 className="text-xs font-sans font-bold text-slate-400 tracking-wider uppercase flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
@@ -541,7 +542,10 @@ export default function DataStream({ endpointId }) {
             return (
               <div 
                 key={webhook.id}
-                onClick={() => setActiveWebhook(webhook)}
+                onClick={() => {
+                  setActiveWebhook(webhook);
+                  setShowMobileDetails(true);
+                }}
                 className={`p-4 rounded-xl cursor-pointer transition-all duration-200 border relative group ${
                   isActive 
                     ? 'bg-[#0f172a]/80 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.05)]' 
@@ -580,7 +584,7 @@ export default function DataStream({ endpointId }) {
       </div>
 
       {/* Right Column: Details Pane */}
-      <div className="flex-1 flex flex-col bg-[#020617] h-full overflow-hidden">
+      <div className={`flex-1 flex-col bg-[#020617] h-full overflow-hidden ${!showMobileDetails ? 'hidden md:flex' : 'flex'}`}>
         {!activeWebhook ? (
           <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-8 text-center">
              <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center mb-4 border border-slate-700/50">
@@ -590,27 +594,35 @@ export default function DataStream({ endpointId }) {
              <p className="text-sm text-slate-500 max-w-md">
                Send a request to <br/>
                <code className="text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded mt-2 inline-block break-all">
-                 ${API_URL}/api/v1/catch/{endpointId || 'your-endpoint-id'}
+                 {API_URL}/api/v1/catch/{endpointId || 'your-endpoint-id'}
                </code>
              </p>
           </div>
         ) : (
           <>
             {/* Detail Header */}
-            <div className="p-8 border-b border-white/5 bg-[#0f172a]/20">
+            <div className="p-4 md:p-8 border-b border-white/5 bg-[#0f172a]/20">
               <div className="flex items-start justify-between mb-6">
-                <div>
-                  <div className="flex items-center gap-4 mb-3">
-                    <h1 className="text-2xl font-bold text-white font-mono break-all">{activeWebhook.path}</h1>
-                    <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20`}>
-                      {activeWebhook.status} OK
-                    </span>
+                <div className="flex items-center gap-3 md:gap-4">
+                  <button 
+                    className="md:hidden flex items-center justify-center p-2 rounded-lg bg-white/5 border border-white/10 text-slate-300 hover:text-white"
+                    onClick={() => setShowMobileDetails(false)}
+                  >
+                    <ChevronRight className="w-5 h-5 rotate-180" />
+                  </button>
+                  <div>
+                    <div className="flex items-center gap-4 mb-3">
+                      <h1 className="text-xl md:text-2xl font-bold text-white font-mono break-all">{activeWebhook.path}</h1>
+                      <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20`}>
+                        {activeWebhook.status} OK
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-400 font-mono flex items-center gap-4">
+                      <span>ID: <span className="text-slate-300">{activeWebhook.id}</span></span>
+                      <span className="text-slate-600">•</span>
+                      <span>Time: {new Date(activeWebhook.timestamp || activeWebhook.time).toLocaleString()}</span>
+                    </p>
                   </div>
-                  <p className="text-sm text-slate-400 font-mono flex items-center gap-4">
-                    <span>ID: <span className="text-slate-300">{activeWebhook.id}</span></span>
-                    <span className="text-slate-600">•</span>
-                    <span>Time: {new Date(activeWebhook.timestamp || activeWebhook.time).toLocaleString()}</span>
-                  </p>
                 </div>
                 <div className="flex gap-2">
                   <button 
