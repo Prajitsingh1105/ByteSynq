@@ -464,15 +464,18 @@ export default function DataStream({ endpointId }) {
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
             Incoming Webhook Stream
           </h2>
-          <div className="relative">
+          <div className="relative group">
             <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
-              placeholder="Search path, method, id..." 
+              placeholder="Search path, id, or payload (key:value)..." 
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full bg-[#020617] border border-white/5 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500/50 placeholder:text-slate-600"
+              className="w-full bg-[#020617] border border-white/5 rounded-lg pl-9 pr-8 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500/50 placeholder:text-slate-600"
             />
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-600 hover:text-emerald-400 cursor-help" title="Pro Tip: Use key:value syntax to deeply search JSON payloads! e.g. user.email:test@test.com">
+              <Filter className="w-3.5 h-3.5" />
+            </div>
           </div>
           <div className="flex gap-2">
             <select 

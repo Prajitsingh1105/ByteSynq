@@ -68,11 +68,32 @@ async function getWebhooks(req, res) {
         }
         
         if (search) {
-            query.$or = [
+            const orConditions = [
                 { path: { $regex: search, $options: 'i' } },
                 { method: { $regex: search, $options: 'i' } },
                 { id: { $regex: search, $options: 'i' } }
             ];
+
+            if (search.includes(':')) {
+                const parts = search.split(':');
+                if (parts.length >= 2) {
+                    const key = parts[0].trim();
+                    const value = parts.slice(1).join(':').trim();
+                    
+                    const payloadQuery = {};
+                    if (value.toLowerCase() === 'true') {
+                        payloadQuery[`payload.${key}`] = true;
+                    } else if (value.toLowerCase() === 'false') {
+                        payloadQuery[`payload.${key}`] = false;
+                    } else if (!isNaN(Number(value)) && value !== '') {
+                        payloadQuery[`payload.${key}`] = Number(value);
+                    } else {
+                        payloadQuery[`payload.${key}`] = { $regex: value, $options: 'i' };
+                    }
+                    orConditions.push(payloadQuery);
+                }
+            }
+            query.$or = orConditions;
         }
         
         const webhooks = await Webhook.find(query).sort({ createdAt: -1 }).limit(50);
