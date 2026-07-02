@@ -114,24 +114,30 @@ export default function App() {
   ];
 
   const renderContent = () => {
-    switch (activeView) {
-      case 'dashboard':
-        return <Dashboard endpoint={activeEndpoint} />;
-      case 'stream':
-        return <DataStream endpointId={activeEndpointId} />;
-      case 'integrations':
-        return <Integrations endpoint={activeEndpoint} onUpdateEndpoint={updateEndpointInState} />;
-      case 'documentation':
-        return <Documentation />;
-      case 'settings':
-        return <Settings endpoint={activeEndpoint} onUpdateEndpoint={updateEndpointInState} />;
-      default:
-        return (
+    return (
+      <>
+        <div className={activeView === 'dashboard' ? 'block h-full w-full' : 'hidden'}>
+          <Dashboard endpoint={activeEndpoint} />
+        </div>
+        <div className={activeView === 'stream' ? 'block h-full w-full' : 'hidden'}>
+          <DataStream endpointId={activeEndpointId} />
+        </div>
+        <div className={activeView === 'integrations' ? 'block h-full w-full' : 'hidden'}>
+          <Integrations endpoint={activeEndpoint} onUpdateEndpoint={updateEndpointInState} />
+        </div>
+        <div className={activeView === 'documentation' ? 'block h-full w-full' : 'hidden'}>
+          <Documentation />
+        </div>
+        <div className={activeView === 'settings' ? 'block h-full w-full' : 'hidden'}>
+          <Settings endpoint={activeEndpoint} onUpdateEndpoint={updateEndpointInState} />
+        </div>
+        {!['dashboard', 'stream', 'integrations', 'documentation', 'settings'].includes(activeView) && (
           <div className="flex items-center justify-center h-full text-slate-500 font-mono">
             View not found
           </div>
-        );  
-    }
+        )}
+      </>
+    );
   };
 
   if (authLoading) {

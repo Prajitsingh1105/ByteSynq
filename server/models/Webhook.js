@@ -45,4 +45,6 @@ const webhookSchema = new mongoose.Schema({
     }
 });
 
+webhookSchema.index({ endpointId: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Webhook', webhookSchema);
