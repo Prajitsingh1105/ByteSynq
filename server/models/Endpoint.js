@@ -50,6 +50,13 @@ const endpointSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
+    security: {
+        rateLimitEnabled: { type: Boolean, default: false },
+        rateLimitRequests: { type: Number, default: 60 },
+        rateLimitWindowMs: { type: Number, default: 60000 },
+        ipWhitelistEnabled: { type: Boolean, default: false },
+        ipWhitelist: { type: [String], default: [] }
+    },
     integrations: [{
         provider: { type: String, enum: ['stripe', 'github', 'shopify', 'twilio'] },
         secret: { type: String },

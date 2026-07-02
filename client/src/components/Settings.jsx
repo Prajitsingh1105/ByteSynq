@@ -17,6 +17,14 @@ export default function Settings({ endpoint, onUpdateEndpoint }) {
     notifyOnInactivity: false,
     inactivityThresholdHours: 24
   });
+  const [security, setSecurity] = useState(endpoint?.security || {
+    rateLimitEnabled: false,
+    rateLimitRequests: 60,
+    rateLimitWindowMs: 60000,
+    ipWhitelistEnabled: false,
+    ipWhitelist: []
+  });
+  const [ipWhitelistInput, setIpWhitelistInput] = useState(endpoint?.security?.ipWhitelist?.join(', ') || '');
 
   // Sync state if endpoint prop changes
   useEffect(() => {
@@ -32,6 +40,14 @@ export default function Settings({ endpoint, onUpdateEndpoint }) {
         notifyOnInactivity: false,
         inactivityThresholdHours: 24
       });
+      setSecurity(endpoint.security || {
+        rateLimitEnabled: false,
+        rateLimitRequests: 60,
+        rateLimitWindowMs: 60000,
+        ipWhitelistEnabled: false,
+        ipWhitelist: []
+      });
+      setIpWhitelistInput(endpoint.security?.ipWhitelist?.join(', ') || '');
     }
   }, [endpoint]);
 
@@ -59,7 +75,11 @@ export default function Settings({ endpoint, onUpdateEndpoint }) {
         forwardUrl: endpoint.forwardUrl,
         validationSchema: validationSchema,
         mockResponse: mockResponse,
-        alertSettings: alertSettings
+        alertSettings: alertSettings,
+        security: {
+          ...security,
+          ipWhitelist: ipWhitelistInput.split(',').map(ip => ip.trim()).filter(ip => ip.length > 0)
+        }
       });
       if (res.data.success) {
         onUpdateEndpoint(res.data.endpoint);
@@ -214,6 +234,99 @@ export default function Settings({ endpoint, onUpdateEndpoint }) {
                   rows={4}
                   className="w-full bg-[#020617] border border-white/5 rounded-lg p-4 text-sm font-mono text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
                 />
+              </div>
+            </div>
+          </section>
+
+          {/* Security Rules Section */}
+          <section className="bg-[#0f172a]/50 border border-white/5 rounded-xl p-8 backdrop-blur-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg bg-pink-500/10 border border-pink-500/20">
+                <Shield className="w-5 h-5 text-pink-400" />
+              </div>
+              <h2 className="text-lg font-sans font-semibold text-white">Security Rules</h2>
+            </div>
+            
+            <div className="max-w-2xl space-y-8">
+              {/* Rate Limiting */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-sm font-sans font-medium text-slate-300">Rate Limiting</h3>
+                    <p className="text-xs text-slate-500 mt-1">Prevent abuse by limiting requests per IP address.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={security.rateLimitEnabled}
+                      onChange={(e) => setSecurity({...security, rateLimitEnabled: e.target.checked})}
+                    />
+                    <div className="w-11 h-6 bg-[#020617] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 peer-checked:after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 border border-white/5"></div>
+                  </label>
+                </div>
+                
+                {security.rateLimitEnabled && (
+                  <div className="pl-4 border-l-2 border-white/5 flex gap-4 items-end">
+                    <div className="flex-1">
+                      <label className="block text-xs font-sans text-slate-400 mb-2">Max Requests</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={security.rateLimitRequests}
+                        onChange={(e) => setSecurity({...security, rateLimitRequests: Number(e.target.value)})}
+                        className="w-full bg-[#020617] border border-white/5 rounded-lg px-4 py-2 text-sm font-mono text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-xs font-sans text-slate-400 mb-2">Time Window</label>
+                      <select
+                        value={security.rateLimitWindowMs}
+                        onChange={(e) => setSecurity({...security, rateLimitWindowMs: Number(e.target.value)})}
+                        className="w-full bg-[#020617] border border-white/5 rounded-lg px-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                      >
+                        <option value="1000">Per Second</option>
+                        <option value="60000">Per Minute</option>
+                        <option value="3600000">Per Hour</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* IP Whitelisting */}
+              <div className="pt-6 border-t border-white/5">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-sm font-sans font-medium text-slate-300">IP Whitelisting</h3>
+                    <p className="text-xs text-slate-500 mt-1">Only accept webhooks from explicitly trusted IP addresses.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={security.ipWhitelistEnabled}
+                      onChange={(e) => setSecurity({...security, ipWhitelistEnabled: e.target.checked})}
+                    />
+                    <div className="w-11 h-6 bg-[#020617] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 peer-checked:after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 border border-white/5"></div>
+                  </label>
+                </div>
+                
+                {security.ipWhitelistEnabled && (
+                  <div className="pl-4 border-l-2 border-white/5">
+                    <label className="block text-xs font-sans text-slate-400 mb-2">Allowed IP Addresses (Comma separated)</label>
+                    <textarea
+                      value={ipWhitelistInput}
+                      onChange={(e) => setIpWhitelistInput(e.target.value)}
+                      placeholder="e.g. 192.168.1.1, 10.0.0.0"
+                      rows={3}
+                      className="w-full bg-[#020617] border border-white/5 rounded-lg p-3 text-sm font-mono text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                    />
+                    <p className="mt-2 text-xs font-sans text-amber-500/80">
+                      Warning: If you enable this, all requests from IPs not in this list will be rejected with a 403 status.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </section>

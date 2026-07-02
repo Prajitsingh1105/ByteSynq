@@ -102,6 +102,9 @@ async function updateEndpointSettings(req, res) {
         if (alertSettings) {
             updateData.alertSettings = alertSettings;
         }
+        if (req.body.security) {
+            updateData.security = req.body.security;
+        }
         if (integrations) {
             updateData.integrations = integrations;
         }
@@ -146,6 +149,35 @@ async function handleEndpointCatching(req, res) {
         const endpoint = await Endpoint.findOne({ endpointId });
         if (!endpoint) {
             return res.status(404).json({ success: false, error: "Endpoint not found" });
+        }
+
+        const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
+
+        // Security: IP Whitelisting
+        if (endpoint.security?.ipWhitelistEnabled && endpoint.security.ipWhitelist?.length > 0) {
+            // Strip potential port numbers from IPv4/IPv6 mapped addresses
+            const cleanIp = clientIp.split(',')[0].trim().replace(/^::ffff:/, '');
+            if (!endpoint.security.ipWhitelist.includes(cleanIp)) {
+                console.log(`[!] Blocked webhook from unauthorized IP: ${cleanIp}`);
+                return res.status(403).json({ success: false, error: "Access Denied: IP not whitelisted." });
+            }
+        }
+
+        // Security: Rate Limiting
+        if (endpoint.security?.rateLimitEnabled) {
+            try {
+                const windowKey = `ratelimit:${endpointId}:${clientIp}`;
+                const requestCount = await redis.incr(windowKey);
+                if (requestCount === 1) {
+                    await redis.pexpire(windowKey, endpoint.security.rateLimitWindowMs || 60000);
+                }
+                if (requestCount > (endpoint.security.rateLimitRequests || 60)) {
+                    console.log(`[!] Rate limit exceeded for endpoint ${endpointId} by IP: ${clientIp}`);
+                    return res.status(429).json({ success: false, error: "Too Many Requests" });
+                }
+            } catch (redisErr) {
+                console.error("Failed to check rate limit", redisErr);
+            }
         }
 
         // Native Signature Verification
