@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { 
   Code2, ArrowRight, Loader2, ShieldCheck, Mail, Lock, GitBranch, 
   Terminal, Zap, Activity, Globe, LockKeyhole, Box, Hexagon, Triangle, 
-  Command, Server, CheckCircle2, ChevronRight
+  Command, Server, CheckCircle2, ChevronRight, Eye, EyeOff, KeyRound
 } from 'lucide-react';
 import ByteSynqLogo from './ByteSynqLogo';
 import Documentation from './Documentation';
@@ -15,9 +15,17 @@ export default function Auth({ onLoginSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [currentView, setCurrentView] = useState('landing'); // 'landing', 'docs', 'features'
+  const [otpStep, setOtpStep] = useState(false);
+  const [otp, setOtp] = useState('');
+
+  useEffect(() => {
+    setOtpStep(false);
+    setOtp('');
+  }, [isLogin]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -51,15 +59,26 @@ export default function Auth({ onLoginSuccess }) {
     setError(null);
     
     try {
-      const endpoint = isLogin ? '/api/v1/auth/login' : '/api/v1/auth/register';
-      const res = await axios.post(`${API_URL}${endpoint}`, { email, password });
-      
-      if (res.data.success) {
-        onLoginSuccess(res.data.user);
-        toast.success(isLogin ? "Logged in successfully!" : "Account created successfully!");
+      if (!isLogin && !otpStep) {
+        // Step 1 of Signup: Request OTP
+        const res = await axios.post(`${API_URL}/api/v1/auth/send-otp`, { email });
+        if (res.data.success) {
+          setOtpStep(true);
+          toast.success("Verification code sent to your email");
+        }
+      } else {
+        // Step 2 of Signup (or regular login)
+        const endpoint = isLogin ? '/api/v1/auth/login' : '/api/v1/auth/register';
+        const payload = isLogin ? { email, password } : { email, password, otp };
+        const res = await axios.post(`${API_URL}${endpoint}`, payload);
+        
+        if (res.data.success) {
+          onLoginSuccess(res.data.user);
+          toast.success(isLogin ? "Logged in successfully!" : "Account created successfully!");
+        }
       }
     } catch (err) {
-      const msg = err.response?.data?.error || 'An error occurred during authentication';
+      const msg = err.response?.data?.error || 'An error occurred';
       setError(msg);
       toast.error(msg);
     } finally {
@@ -375,35 +394,63 @@ export default function Auth({ onLoginSuccess }) {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Email Address</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="you@example.com"
-                  className="w-full bg-[#020617] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all placeholder:text-slate-600"
-                />
-              </div>
-            </div>
+            {!otpStep ? (
+              <>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Email Address</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      placeholder="you@example.com"
+                      className="w-full bg-[#020617] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all placeholder:text-slate-600"
+                    />
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="••••••••"
-                  className="w-full bg-[#020617] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all placeholder:text-slate-600"
-                />
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      placeholder="••••••••"
+                      className="w-full bg-[#020617] border border-white/10 rounded-xl pl-10 pr-10 py-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all placeholder:text-slate-600"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Verification Code</label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <input
+                    type="text"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    required
+                    maxLength={6}
+                    placeholder="Enter 6-digit code"
+                    className="w-full bg-[#020617] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm font-mono text-center tracking-widest text-emerald-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all placeholder:text-slate-600"
+                  />
+                </div>
+                <p className="text-xs text-slate-500 mt-2 text-center">We sent a verification code to {email}</p>
               </div>
-            </div>
+            )}
 
             <button
               type="submit"
@@ -412,35 +459,44 @@ export default function Auth({ onLoginSuccess }) {
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                 <>
-                  {isLogin ? 'Sign In' : 'Create Account'}
+                  {!isLogin && !otpStep ? 'Continue' : isLogin ? 'Sign In' : 'Create Account'}
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
 
-          <div className="mt-8 flex items-center justify-center">
-            <div className="border-t border-slate-700 flex-grow"></div>
-            <span className="mx-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">OR</span>
-            <div className="border-t border-slate-700 flex-grow"></div>
-          </div>
-          
-          <a 
-            href={`${API_URL}/api/v1/auth/github`}
-            className="mt-6 w-full py-3 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-3 border border-slate-700"
-          >
-            <GitBranch className="w-5 h-5" />
-            Continue with GitHub
-          </a>
+          {!otpStep && (
+            <>
+              <div className="mt-8 flex items-center justify-center">
+                <div className="border-t border-slate-700 flex-grow"></div>
+                <span className="mx-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">OR</span>
+                <div className="border-t border-slate-700 flex-grow"></div>
+              </div>
+              
+              <a 
+                href={`${API_URL}/api/v1/auth/github`}
+                className="mt-6 w-full py-3 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-3 border border-slate-700"
+              >
+                <GitBranch className="w-5 h-5" />
+                Continue with GitHub
+              </a>
+            </>
+          )}
 
           <div className="mt-8 text-center text-sm text-slate-400">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
-            <button 
-              onClick={() => { setIsLogin(!isLogin); setError(null); }}
-              className="text-emerald-400 font-medium hover:text-emerald-300 hover:underline transition-all"
-            >
-              {isLogin ? 'Sign up' : 'Log in'}
-            </button>
+            {otpStep ? (
+              <button 
+                onClick={() => setOtpStep(false)}
+                className="text-emerald-400 font-medium hover:text-emerald-300 transition-all"
+              >
+                Back to Signup
+              </button>
+            ) : isLogin ? (
+              <>Don't have an account? <button onClick={() => { setIsLogin(false); setError(null); }} className="text-emerald-400 font-medium hover:text-emerald-300 hover:underline transition-all">Sign up</button></>
+            ) : (
+              <>Already have an account? <button onClick={() => { setIsLogin(true); setError(null); }} className="text-emerald-400 font-medium hover:text-emerald-300 hover:underline transition-all">Log in</button></>
+            )}
           </div>
         </div>
       </section>
