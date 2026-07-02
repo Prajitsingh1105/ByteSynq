@@ -448,6 +448,130 @@ async function getEndpointAnalytics(req, res) {
     }
 }
 
+async function getGlobalAnalytics(req, res) {
+    try {
+        const endpoints = await Endpoint.find({ userId: req.user._id });
+        const endpointIds = endpoints.map(e => e.endpointId);
+
+        if (endpointIds.length === 0) {
+            return res.status(200).json({
+                success: true,
+                totalEvents: 0,
+                successRate: "0%",
+                avgLatency: "0ms",
+                volumeData: [],
+                statusCodeData: []
+            });
+        }
+
+        const pipeline = [
+            { $match: { endpointId: { $in: endpointIds } } },
+            {
+                $facet: {
+                    totalEvents: [{ $count: "count" }],
+                    successfulEvents: [
+                        { $match: { status: { $gte: 200, $lt: 300 } } },
+                        { $count: "count" }
+                    ],
+                    latency: [
+                        {
+                            $project: {
+                                latencyVal: {
+                                    $convert: {
+                                        input: {
+                                            $replaceAll: {
+                                                input: "$latency",
+                                                find: "ms",
+                                                replacement: ""
+                                            }
+                                        },
+                                        to: "double",
+                                        onError: 0,
+                                        onNull: 0
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            $group: {
+                                _id: null,
+                                avgLatency: { $avg: "$latencyVal" }
+                            }
+                        }
+                    ],
+                    statusCodes: [
+                        {
+                            $group: {
+                                _id: "$status",
+                                count: { $sum: 1 }
+                            }
+                        }
+                    ],
+                    last24Hours: [
+                        {
+                            $match: {
+                                createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+                            }
+                        },
+                        {
+                            $group: {
+                                _id: {
+                                    $dateTrunc: {
+                                        date: "$createdAt",
+                                        unit: "hour"
+                                    }
+                                },
+                                volume: { $sum: 1 }
+                            }
+                        },
+                        { $sort: { "_id": 1 } }
+                    ]
+                }
+            }
+        ];
+
+        const result = await Webhook.aggregate(pipeline);
+        const data = result[0];
+
+        const total = data.totalEvents[0]?.count || 0;
+        const successCount = data.successfulEvents[0]?.count || 0;
+        const successRate = total === 0 ? "0%" : ((successCount / total) * 100).toFixed(1) + "%";
+
+        const rawAvgLatency = data.latency[0]?.avgLatency || 0;
+        const avgLatency = rawAvgLatency.toFixed(1) + "ms";
+
+        const colorMap = {
+            200: '#10b981', 201: '#059669', 
+            400: '#f59e0b', 401: '#f97316', 
+            404: '#f97316', 500: '#ef4444'
+        };
+        const statusCodeData = data.statusCodes.map(s => ({
+            code: `${s._id} ${s._id === 200 ? 'OK' : s._id === 201 ? 'Created' : s._id === 400 ? 'Bad Req' : s._id === 401 ? 'Unauth' : s._id === 404 ? 'Not Found' : s._id >= 500 ? 'Error' : ''}`.trim(),
+            count: s.count,
+            color: colorMap[s._id] || '#64748b'
+        }));
+
+        const volumeData = data.last24Hours.map(v => ({
+            time: v._id,
+            volume: v.volume,
+            events: v.volume
+        }));
+
+        res.status(200).json({
+            success: true,
+            totalEvents: total,
+            successRate,
+            avgLatency,
+            volumeData,
+            statusCodeData
+        });
+
+    } catch (error) {
+        console.error("Global Analytics Error:", error);
+        res.status(500).json({ success: false, error: "Failed to generate global analytics" });
+    }
+}
+
 async function replayWebhook(req, res) {
     const { endpointId, webhookId } = req.params;
     
@@ -495,5 +619,6 @@ module.exports = {
     rotateSecretKey,
     handleEndpointCatching,
     getEndpointAnalytics,
+    getGlobalAnalytics,
     replayWebhook,
 }

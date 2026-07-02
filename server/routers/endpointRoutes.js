@@ -7,6 +7,7 @@ const {
     updateEndpointSettings,
     rotateSecretKey,
     getEndpointAnalytics,
+    getGlobalAnalytics,
     replayWebhook
 } = require("../controllers/endpointController");
 const { protect } = require('../middleware/authMiddleware');
@@ -24,6 +25,7 @@ router.post("/api/v1/endpoints", protect, createEndpoint);
 router.get("/api/v1/endpoints", protect, getEndpoints);
 router.get("/api/v1/endpoints/:endpointId/webhooks", protect, getWebhooks);
 router.get("/api/v1/endpoints/:endpointId/analytics", protect, getEndpointAnalytics);
+router.get("/api/v1/analytics/global", protect, getGlobalAnalytics);
 
 router.patch("/api/v1/endpoints/:endpointId/settings", protect, updateEndpointSettings);
 router.post("/api/v1/endpoints/:endpointId/rotate-secret", protect, rotateSecretKey);
