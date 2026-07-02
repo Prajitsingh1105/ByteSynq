@@ -221,7 +221,7 @@ export default function App() {
                     onKeyDown={async (e) => {
                       if (e.key === 'Enter') {
                         try {
-                          const res = await axios.put(`${API_URL}/api/v1/endpoints/${ep.endpointId}/settings`, { name: editNameValue });
+                          const res = await axios.patch(`${API_URL}/api/v1/endpoints/${ep.endpointId}/settings`, { name: editNameValue });
                           updateEndpointInState(res.data.endpoint);
                           setEditingEndpointId(null);
                           toast.success("Endpoint renamed");
@@ -236,7 +236,7 @@ export default function App() {
                     onBlur={async () => {
                       if (editingEndpointId === ep.endpointId) {
                         try {
-                          const res = await axios.put(`${API_URL}/api/v1/endpoints/${ep.endpointId}/settings`, { name: editNameValue });
+                          const res = await axios.patch(`${API_URL}/api/v1/endpoints/${ep.endpointId}/settings`, { name: editNameValue });
                           updateEndpointInState(res.data.endpoint);
                           setEditingEndpointId(null);
                           toast.success("Endpoint renamed");
