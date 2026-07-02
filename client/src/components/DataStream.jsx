@@ -164,6 +164,29 @@ export default function DataStream({ endpointId }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const syntaxHighlight = (json, isHeader = false) => {
+    if (typeof json !== 'string') {
+      json = JSON.stringify(json, undefined, 2);
+    }
+    json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const highlighted = json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+        let cls = isHeader ? 'text-emerald-300' : 'text-emerald-400';
+        if (/^"/.test(match)) {
+            if (/:$/.test(match)) {
+                cls = isHeader ? 'text-purple-300' : 'text-sky-300';
+            } else {
+                cls = isHeader ? 'text-emerald-300' : 'text-amber-300';
+            }
+        } else if (/true|false/.test(match)) {
+            cls = isHeader ? 'text-purple-400' : 'text-blue-400';
+        } else if (/null/.test(match)) {
+            cls = 'text-slate-400';
+        }
+        return `<span class="${cls}">${match}</span>`;
+    });
+    return highlighted;
+  };
+
   useEffect(() => {
     if (activeTab === 'METRICS' && endpointId) {
       axios.get(`${API_URL}/api/v1/endpoints/${endpointId}/analytics`, {
@@ -316,10 +339,10 @@ export default function DataStream({ endpointId }) {
                     <span className="text-xs font-sans font-medium">{copied ? 'Copied' : 'Copy'}</span>
                   </button>
                 </div>
-                <div className="p-4 overflow-auto flex-1">
-                  <pre className="text-emerald-400/90 text-xs sm:text-sm font-mono leading-relaxed">
-                    <code>{JSON.stringify(activeWebhook.payload, null, 2)}</code>
-                  </pre>
+                <div className="p-4 overflow-auto flex-1 text-xs sm:text-sm font-mono leading-relaxed text-slate-300">
+                  <pre 
+                    dangerouslySetInnerHTML={{ __html: syntaxHighlight(activeWebhook.payload) }}
+                  />
                 </div>
               </div>
             </div>
@@ -382,11 +405,11 @@ export default function DataStream({ endpointId }) {
                   {Object.entries(activeWebhook.headers).map(([key, value]) => (
                     <tr key={key} className="hover:bg-[#0f172a]/50 transition-colors group">
                       <td className="px-6 py-4 w-1/3 align-top">
-                        <span className="font-mono text-xs text-slate-400 bg-white/[0.02] border border-white/5 px-2 py-1 rounded">
+                        <span className="font-mono text-xs text-purple-300 bg-white/[0.02] border border-white/5 px-2 py-1 rounded">
                           {key}
                         </span>
                       </td>
-                      <td className="px-6 py-4 font-mono text-xs text-emerald-400/90 break-all align-top group-hover:text-emerald-400 transition-colors">
+                      <td className="px-6 py-4 font-mono text-xs text-emerald-300 break-all align-top group-hover:text-emerald-200 transition-colors">
                         {value}
                       </td>
                     </tr>

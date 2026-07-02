@@ -60,9 +60,9 @@ export default function WebhookDetails({ event, tab, setTab }) {
           )}
 
           {tab === 'HEADERS' && (
-            <pre className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950 p-4 text-xs">
-              {JSON.stringify(event.headers, null, 2)}
-            </pre>
+            <div className="relative">
+              <JsonViewer data={event.headers} isHeader={true} />
+            </div>
           )}
 
           {tab === 'METRICS' && (
