@@ -1,5 +1,5 @@
 import { API_URL } from '../config.js';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Database, Zap, Clock, Terminal, ChevronRight, Webhook, Search, Filter, ShieldAlert, Copy, Check } from 'lucide-react';
 import { io } from 'socket.io-client';
@@ -144,6 +144,7 @@ const mockMetricsData = [
 ];
 
 export default function DataStream({ endpointId }) {
+  const cacheRef = useRef({});
   const [webhooks, setWebhooks] = useState([]);
   const [activeWebhook, setActiveWebhook] = useState(null);
   const [activeTab, setActiveTab] = useState('REQUEST BODY');
@@ -219,6 +220,17 @@ export default function DataStream({ endpointId }) {
     if (!endpointId) return;
 
     async function fetchWebhooks() {
+      const cacheKey = `${endpointId}-${debouncedSearch}-${methodFilter}-${statusFilter}`;
+      if (cacheRef.current[cacheKey]) {
+        const cachedData = cacheRef.current[cacheKey];
+        setWebhooks(cachedData);
+        if (cachedData.length > 0) {
+          setActiveWebhook(prev => prev ? cachedData.find(w => w.id === prev.id) || cachedData[0] : cachedData[0]);
+        } else {
+          setActiveWebhook(null);
+        }
+      }
+
       try {
         const params = new URLSearchParams();
         if (debouncedSearch) params.append('search', debouncedSearch);
@@ -228,6 +240,7 @@ export default function DataStream({ endpointId }) {
         const res = await axios.get(`${API_URL}/api/v1/endpoints/${endpointId}/webhooks?${params.toString()}`);
         if (res.data.success) {
           setWebhooks(res.data.webhooks);
+          cacheRef.current[cacheKey] = res.data.webhooks;
           if (res.data.webhooks.length > 0) {
             setActiveWebhook(prev => prev ? res.data.webhooks.find(w => w.id === prev.id) || res.data.webhooks[0] : res.data.webhooks[0]);
           } else {

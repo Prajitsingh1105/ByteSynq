@@ -87,7 +87,9 @@ async function updateEndpointSettings(req, res) {
     const { endpointId } = req.params;
     const { forwardUrl, retentionDays, mockResponse, validationSchema, alertSettings, integrations, name } = req.body;
     try {
-        const updateData = { forwardUrl, retentionDays };
+        const updateData = {};
+        if (forwardUrl !== undefined) updateData.forwardUrl = forwardUrl;
+        if (retentionDays !== undefined) updateData.retentionDays = retentionDays;
         if (name !== undefined) {
             updateData.name = name;
         }
