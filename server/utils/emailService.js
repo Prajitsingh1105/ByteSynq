@@ -88,7 +88,30 @@ async function sendAlertEmail(to, subject, text) {
         }
     }
 
-    // 3. Fallback to Nodemailer (SMTP or Ethereal)
+    // 3. Brevo (formerly Sendinblue) HTTP API (Bypasses Render SMTP Block)
+    if (process.env.BREVO_API_KEY) {
+        try {
+            const cleanFrom = fromAddress.replace(/.*<(.+)>/, '$1').trim();
+            await axios.post('https://api.brevo.com/v3/smtp/email', {
+                sender: { email: cleanFrom, name: 'ByteSynq Alerts' },
+                to: [{ email: to }],
+                subject: subject,
+                textContent: text
+            }, {
+                headers: { 
+                    'api-key': process.env.BREVO_API_KEY,
+                    'Content-Type': 'application/json'
+                }
+            });
+            console.log(`[Brevo HTTP] Email sent to ${to}. Subject: ${subject}`);
+            return true;
+        } catch (err) {
+            console.error("[Brevo HTTP] Failed to send email:", err.response?.data || err.message);
+            return false;
+        }
+    }
+
+    // 4. Fallback to Nodemailer (SMTP or Ethereal)
     if (!transporter) await initTransporter();
     
     try {
