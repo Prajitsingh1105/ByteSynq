@@ -5,18 +5,23 @@ let transporter;
 async function initTransporter() {
     if (transporter) return;
     
-    // Use real SMTP if configured (e.g., SendGrid, Gmail, AWS SES)
     if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+        const port = parseInt(process.env.SMTP_PORT) || 587;
         transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST,
-            port: process.env.SMTP_PORT || 587,
-            secure: process.env.SMTP_PORT == 465, // true for 465, false for other ports
+            port: port,
+            secure: port === 465, // true for 465, false for other ports
             auth: {
                 user: process.env.SMTP_USER,
                 pass: process.env.SMTP_PASS,
             },
+            connectionTimeout: 10000, // Fail fast after 10 seconds
+            greetingTimeout: 10000,
+            socketTimeout: 10000,
+            logger: true, // Log to console for debugging on Render
+            debug: true
         });
-        console.log(`SMTP transporter initialized using ${process.env.SMTP_HOST}`);
+        console.log(`SMTP transporter initialized using ${process.env.SMTP_HOST}:${port}`);
         return;
     }
 
