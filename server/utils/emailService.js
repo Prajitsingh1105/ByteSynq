@@ -1,10 +1,12 @@
 const nodemailer = require('nodemailer');
+const axios = require('axios');
 
 let transporter;
 
 async function initTransporter() {
     if (transporter) return;
     
+    // Use real SMTP if configured (e.g., SendGrid, Gmail, AWS SES)
     if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
         const port = parseInt(process.env.SMTP_PORT) || 587;
         transporter = nodemailer.createTransport({
@@ -44,18 +46,62 @@ async function initTransporter() {
 }
 
 async function sendAlertEmail(to, subject, text) {
+    const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER || 'alerts@bytesynq.io';
+
+    // 1. Resend HTTP API (Bypasses Render SMTP Block)
+    if (process.env.RESEND_API_KEY) {
+        try {
+            await axios.post('https://api.resend.com/emails', {
+                from: fromAddress,
+                to: [to],
+                subject: subject,
+                text: text
+            }, {
+                headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}` }
+            });
+            console.log(`[Resend HTTP] Email sent to ${to}. Subject: ${subject}`);
+            return true;
+        } catch (err) {
+            console.error("[Resend HTTP] Failed to send email:", err.response?.data || err.message);
+            return false;
+        }
+    }
+
+    // 2. SendGrid HTTP API (Bypasses Render SMTP Block)
+    if (process.env.SENDGRID_API_KEY) {
+        try {
+            // Ensure fromAddress is just an email string if it has format '"Name" <email>'
+            const cleanFrom = fromAddress.replace(/.*<(.+)>/, '$1').trim();
+            await axios.post('https://api.sendgrid.com/v3/mail/send', {
+                personalizations: [{ to: [{ email: to }] }],
+                from: { email: cleanFrom },
+                subject: subject,
+                content: [{ type: 'text/plain', value: text }]
+            }, {
+                headers: { 'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}` }
+            });
+            console.log(`[SendGrid HTTP] Email sent to ${to}. Subject: ${subject}`);
+            return true;
+        } catch (err) {
+            console.error("[SendGrid HTTP] Failed to send email:", err.response?.data || err.message);
+            return false;
+        }
+    }
+
+    // 3. Fallback to Nodemailer (SMTP or Ethereal)
     if (!transporter) await initTransporter();
     
     try {
-        const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER || '"ByteSynq Alerts" <alerts@bytesynq.io>';
         const info = await transporter.sendMail({
             from: fromAddress,
             to: to,
             subject: subject,
             text: text,
         });
-        console.log(`[Alert] Email sent to ${to}. Subject: ${subject}`);
-        console.log(`Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+        console.log(`[SMTP Alert] Email sent to ${to}. Subject: ${subject}`);
+        if (info.messageId && info.messageId.includes('ethereal')) {
+            console.log(`Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+        }
         return true;
     } catch (error) {
         console.error("Failed to send alert email:", error);
